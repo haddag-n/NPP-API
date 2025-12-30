@@ -19,9 +19,16 @@ async def lifespan(app: FastAPI):
     Application lifespan manager.
     Creates database tables and initial admin user on startup.
     """
-    # Create tables
+    import os
+    
+    # Create tables (drop first if RECREATE_TABLES is set)
     async with engine.begin() as conn:
+        if os.environ.get("RECREATE_TABLES", "").lower() == "true":
+            print("⚠️  RECREATE_TABLES=true: Dropping all tables...")
+            await conn.run_sync(Base.metadata.drop_all)
+            print("✅ Tables dropped")
         await conn.run_sync(Base.metadata.create_all)
+        print("✅ Tables created/verified")
     
     # Create initial admin user if it doesn't exist
     from app.db.session import AsyncSessionLocal
